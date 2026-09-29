@@ -87,15 +87,13 @@ private function render_watermark_image_picker($image_id) {
 	<button type="button" class="button button-primary" id="choose-watermark-image" aria-describedby="desc-watermark-image"><?php esc_html_e('Select Image', 'coding-bunny-image-watermarker'); ?></button>
 	<p id="desc-watermark-image" class="description"><?php esc_html_e('Upload or select a PNG/JPEG/WebP image.', 'coding-bunny-image-watermarker'); ?></p>
 	<br>
-	<img src="<?php echo esc_url($image_url); ?>" id="watermark-image-preview" alt="<?php esc_attr_e('Selected watermark image preview', 'coding-bunny-image-watermarker'); ?>" style="max-width:150px;margin-top:10px;<?php echo $image_url ? '' : 'display:none;'; ?>" />
+	<img src="<?php echo esc_url($image_url); ?>" id="watermark-image-preview" alt="<?php esc_attr_e('Selected watermark image preview', 'coding-bunny-image-watermarker'); ?>" class="cbio-picker-preview"<?php echo $image_url ? '' : ' style="display:none;"'; ?> />
 	<?php
 }
 
 public function render_tabs_page() {
 	if (!$this->user_can_manage()) wp_die(esc_html__('Insufficient permissions.', 'coding-bunny-image-watermarker'));
 	$this->options = $this->get_options();
-	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$active_tab = sanitize_text_field(wp_unslash($_GET['tab'] ?? 'settings'));
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if (isset($_GET['cbio_backups_deleted'])) {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -104,42 +102,66 @@ public function render_tabs_page() {
 		add_settings_error('cbio_backups_notice', 'cbio_backups_deleted', sprintf(esc_html__('%d backup files deleted.', 'coding-bunny-image-watermarker'), $count), 'updated');
 	}
 	settings_errors();
+	$logo_file   = CBIW_PLUGIN_DIR . 'assets/images/cbio-logo.svg';
+	$logo_url    = file_exists( $logo_file ) ? CBIW_PLUGIN_URL . 'assets/images/cbio-logo.svg' : '';
+	$sponsor_url = defined( 'CBIO_SPONSOR_URL' ) ? CBIO_SPONSOR_URL : 'https://github.com/sponsors/CodingBunnyDev';
+	$auto_on     = isset( $this->options['enable_auto_watermark'] ) && '1' === (string) $this->options['enable_auto_watermark'];
 	?>
-	<div class="cbio-header">
-	<?php $logo_url = plugins_url( 'assets/images/cbio-logo.svg', WP_PLUGIN_DIR . '/coding-bunny-image-optimizer/coding-bunny-image-optimizer.php' ); ?>
-
-	<div class="cbio-header-left">
-		<img src="<?php echo esc_url( $logo_url ); ?>"
-			 alt="<?php echo esc_attr__( 'CodingBunny logo', 'coding-bunny-image-watermarker' ); ?>"
-			 class="cbio-logo" />
-		<div class="cbio-title">
-			<p>
-				<?php esc_html_e( 'CodingBunny Image Watermarker', 'coding-bunny-image-watermarker' ); ?>
-				<span class="cbio-version">
-					v<?php echo defined( 'CBIW_VERSION' ) ? esc_html( CBIW_VERSION ) : ''; ?>
-				</span>
-			</p>
-		</div>
-	</div>
-</div>
-			<div class="cbio-ic-wrap">
-				<nav class="cbio-ic-tabs" aria-label="<?php esc_attr_e('Watermark tabs', 'coding-bunny-image-watermarker'); ?>">
-					<a href="<?php echo esc_url(admin_url('admin.php?page=coding-bunny-image-watermark&tab=settings')); ?>" class="cbio-ic-tab<?php echo ($active_tab === 'settings') ? ' cbio-ic-tab-active' : ''; ?>" aria-current="<?php echo $active_tab === 'settings' ? 'page' : 'false'; ?>">
-						<?php esc_html_e('Watermark Settings', 'coding-bunny-image-watermarker'); ?>
-					</a>
-				</nav>
-				<div class="cbio-ic-content">
-					<?php
-					if ($active_tab === 'settings') {
-						$this->render_settings_tab();
-					} elseif ($active_tab === 'protection') {
-						$this->render_protection_tab();
-					}
-					?>
+	<div class="wrap cbio-wrap cbio-dashboard">
+		<h1 class="screen-reader-text"><?php esc_html_e( 'CodingBunny Image Watermarker', 'coding-bunny-image-watermarker' ); ?></h1>
+		<div class="cbio-header">
+			<div class="cbio-header-left">
+				<?php if ( '' !== $logo_url ) : ?>
+					<img src="<?php echo esc_url( $logo_url ); ?>"
+						alt="<?php esc_attr_e( 'CodingBunny logo', 'coding-bunny-image-watermarker' ); ?>"
+						class="cbio-logo" />
+				<?php else : ?>
+					<div class="cbio-logo-fallback"><?php esc_html_e( 'CodingBunny', 'coding-bunny-image-watermarker' ); ?></div>
+				<?php endif; ?>
+				<div class="cbio-title">
+					<p>
+						<?php esc_html_e( 'CodingBunny Image Watermarker', 'coding-bunny-image-watermarker' ); ?>
+						<span class="cbio-version">v<?php echo esc_html( CBIW_VERSION ); ?></span>
+					</p>
 				</div>
 			</div>
-		<?php
-	}
+			<div class="cbio-header-right">
+				<a class="cbio-sponsor-link" href="<?php echo esc_url( $sponsor_url ); ?>" target="_blank" rel="noopener">
+					<span class="dashicons dashicons-heart" aria-hidden="true"></span>
+					<?php esc_html_e( 'Love this plugin? Support the development', 'coding-bunny-image-watermarker' ); ?>
+				</a>
+			</div>
+		</div>
+		<div class="cbio-ic-wrap">
+			<nav class="cbio-ic-tabs" aria-label="<?php esc_attr_e( 'Watermark tabs', 'coding-bunny-image-watermarker' ); ?>">
+				<a class="cbio-ic-tab cbio-ic-tab-active"
+					href="<?php echo esc_url( admin_url( 'admin.php?page=coding-bunny-image-watermark&tab=settings' ) ); ?>"
+					aria-current="page">
+					<span class="dashicons dashicons-format-image" aria-hidden="true"></span>
+					<span class="cbio-sidebar-label"><?php esc_html_e( 'Watermark Settings', 'coding-bunny-image-watermarker' ); ?></span>
+					<?php if ( $auto_on ) : ?>
+						<span class="cbio-sidebar-badges">
+							<span class="cbio-tab-status"><?php esc_html_e( 'On', 'coding-bunny-image-watermarker' ); ?></span>
+						</span>
+					<?php endif; ?>
+				</a>
+
+				<div class="cbio-sidebar-group">
+					<span class="dashicons dashicons-images-alt2 cbio-sidebar-group-icon" aria-hidden="true"></span>
+					<span class="cbio-sidebar-group-label"><?php esc_html_e( 'Image Optimizer', 'coding-bunny-image-watermarker' ); ?></span>
+				</div>
+				<a class="cbio-ic-tab" href="<?php echo esc_url( admin_url( 'admin.php?page=coding-bunny-image-optimizer' ) ); ?>">
+					<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
+					<span class="cbio-sidebar-label"><?php esc_html_e( 'Optimizer Settings', 'coding-bunny-image-watermarker' ); ?></span>
+				</a>
+			</nav>
+			<div class="cbio-ic-content">
+				<?php $this->render_settings_tab(); ?>
+			</div>
+		</div>
+	</div>
+	<?php
+}
 
 	public function render_settings_tab() {
 		$this->options = $this->get_options();
@@ -206,11 +228,11 @@ public function render_tabs_page() {
 					</td>
 				</tr>
 				<tr>
-					<td colspan="2" style="padding:0;">
-						<h4 style="margin-bottom:10px;"><?php esc_html_e('Preview', 'coding-bunny-image-watermarker'); ?></h4>
-						<div id="cbio-watermark-preview-container" style="position:relative;width:370px;height:240px;" aria-label="<?php esc_attr_e('Watermark preview area', 'coding-bunny-image-watermarker'); ?>">
-							<img src="<?php echo esc_url(plugins_url('assets/images/placeholder.webp', dirname(__DIR__) . '/coding-bunny-image-optimizer.php')); ?>" alt="<?php esc_attr_e('Placeholder image', 'coding-bunny-image-watermarker'); ?>" style="position:absolute;left:0;top:0;width:370px;height:240px;z-index:1;pointer-events:none;" />
-							<canvas id="cbio-watermark-preview-canvas" width="370" height="240" role="img" aria-label="<?php esc_attr_e('Watermarked preview canvas', 'coding-bunny-image-watermarker'); ?>" style="position:absolute;left:0;top:0;z-index:2;background:transparent;display:block;max-width:100%;image-rendering:auto;"></canvas>
+					<td colspan="2" class="cbio-preview-cell">
+						<h4 class="cbio-preview-title"><?php esc_html_e('Preview', 'coding-bunny-image-watermarker'); ?></h4>
+						<div id="cbio-watermark-preview-container" class="cbio-preview" aria-label="<?php esc_attr_e('Watermark preview area', 'coding-bunny-image-watermarker'); ?>">
+							<img src="<?php echo esc_url( CBIW_PLUGIN_URL . 'assets/images/placeholder.webp' ); ?>" alt="<?php esc_attr_e('Placeholder image', 'coding-bunny-image-watermarker'); ?>" class="cbio-preview-image" />
+							<canvas id="cbio-watermark-preview-canvas" width="370" height="240" role="img" aria-label="<?php esc_attr_e('Watermarked preview canvas', 'coding-bunny-image-watermarker'); ?>" class="cbio-preview-canvas"></canvas>
 						</div>
 					</td>
 				</tr>
@@ -299,7 +321,7 @@ public function render_tabs_page() {
 		<div class="cbio-warning" role="alert">
 			<?php esc_html_e('WARNING: If you feel you do not need the original watermark-free versions of your images, you can delete them to free up space on your server. This operation is irreversible.', 'coding-bunny-image-watermarker'); ?>
 		</div>
-		<div class="cbio-info" style="margin-bottom:10px;">
+		<div class="cbio-info">
 			<strong><?php esc_html_e('BACKUP FOLDER:', 'coding-bunny-image-watermarker'); ?></strong>
 			<?php echo esc_html($backup_stats['count']); ?>
 			<?php esc_html_e('images, potential space to free', 'coding-bunny-image-watermarker'); ?>

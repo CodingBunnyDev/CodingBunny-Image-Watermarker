@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CodingBunny Image Watermarker
  * Description: An add-on for CodingBunny Image Optimizer to automatically apply watermarks to your images.
- * Version:     1.1.0
+ * Version:     1.1.1
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * Author:      CodingBunny
@@ -10,7 +10,7 @@
  * Domain Path: /languages
  * License:     GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
- * Requires Plugins: coding-bunny-image-optimizer
+ * Requires Plugins: coding-bunny-image-optimizer-lite
  * Update URI:  false
  *
  * @package CodingBunny\ImageWatermarker
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CBIW_VERSION', '1.1.0' );
+define( 'CBIW_VERSION', '1.1.1' );
 define( 'CBIW_PLUGIN_FILE', __FILE__ );
 define( 'CBIW_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CBIW_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -135,7 +135,7 @@ class CBIW_Image_Watermarker {
 						sprintf(
 							/* translators: %s: Link to parent plugin */
 							__( 'CodingBunny Image Watermarker requires CodingBunny Image Optimizer to be installed and active. Please <a href="%s" target="_blank">install and activate it first</a>.', 'coding-bunny-image-watermarker' ),
-							esc_url( 'https://coding-bunny.com/image-optimizer/' )
+							esc_url( 'https://wordpress.org/plugins/coding-bunny-image-optimizer-lite/' )
 						)
 					);
 					?>
@@ -146,7 +146,7 @@ class CBIW_Image_Watermarker {
 	}
 
 	public function handle_parent_deactivation( $plugin ) {
-		if ( 'coding-bunny-image-optimizer/coding-bunny-image-optimizer.php' === $plugin ) {
+		if ( defined( 'CBIO_PLUGIN_FILE' ) && plugin_basename( CBIO_PLUGIN_FILE ) === $plugin ) {
 			deactivate_plugins( CBIW_PLUGIN_BASENAME );
 			set_transient( 'cbiw_parent_deactivated', true, 30 );
 		}
